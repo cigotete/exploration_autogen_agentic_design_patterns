@@ -30,6 +30,8 @@ chat_result = joe.initiate_chat(
     message="I'm Joe. Cathy, let's keep the jokes rolling."
 )
 
+cathy.send(message="What's last joke we talked about?", recipient=joe)
+
 import pprint
 
 pprint.pprint(chat_result.chat_history)
