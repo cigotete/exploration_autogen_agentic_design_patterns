@@ -26,6 +26,8 @@ chat_result = joe.initiate_chat(
     recipient=cathy, 
     message="I'm Joe. Cathy, let's keep the jokes rolling.",
     max_turns=2,
+    summary_method="reflection_with_llm",
+    summary_prompt="Summarize the conversation",
 )
 
 import pprint
