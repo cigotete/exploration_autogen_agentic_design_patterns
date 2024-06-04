@@ -5,24 +5,50 @@ llm_config = {"model": "gpt-3.5-turbo"}
 # Defining an AutoGen agents
 from autogen import ConversableAgent
 
-cathy = ConversableAgent(
-    name="cathy",
-    system_message=
-    "Your name is Cathy and you are a stand-up comedian. "
-    "When you're ready to end the conversation, say 'I gotta go'.",
+onboarding_personal_information_agent = ConversableAgent(
+    name="Onboarding Personal Information Agent",
+    system_message='''You are a helpful customer onboarding agent,
+    you are here to help new customers get started with our product.
+    Your job is to gather customer's name and location.
+    Do not ask for other information. Return 'TERMINATE' 
+    when you have gathered all the information.''',
     llm_config=llm_config,
+    code_execution_config=False,
     human_input_mode="NEVER",
-    is_termination_msg=lambda msg: "I gotta go" in msg["content"],
 )
 
-joe = ConversableAgent(
-    name="joe",
-    system_message=
-    "Your name is Joe and you are a stand-up comedian. "
-    "When you're ready to end the conversation, say 'I gotta go'.",
+onboarding_topic_preference_agent = ConversableAgent(
+    name="Onboarding Topic preference Agent",
+    system_message='''You are a helpful customer onboarding agent,
+    you are here to help new customers get started with our product.
+    Your job is to gather customer's preferences on news topics.
+    Do not ask for other information.
+    Return 'TERMINATE' when you have gathered all the information.''',
     llm_config=llm_config,
+    code_execution_config=False,
     human_input_mode="NEVER",
-    is_termination_msg=lambda msg: "I gotta go" in msg["content"] or "Goodbye" in msg["content"],
+)
+
+customer_engagement_agent = ConversableAgent(
+    name="Customer Engagement Agent",
+    system_message='''You are a helpful customer service agent
+    here to provide fun for the customer based on the user's
+    personal information and topic preferences.
+    This could include fun facts, jokes, or interesting stories.
+    Make sure to make it engaging and fun!
+    Return 'TERMINATE' when you are done.''',
+    llm_config=llm_config,
+    code_execution_config=False,
+    human_input_mode="NEVER",
+    is_termination_msg=lambda msg: "terminate" in msg.get("content").lower(),
+)
+
+customer_proxy_agent = ConversableAgent(
+    name="customer_proxy_agent",
+    llm_config=False,
+    code_execution_config=False,
+    human_input_mode="ALWAYS",
+    is_termination_msg=lambda msg: "terminate" in msg.get("content").lower(),
 )
 
 chat_result = joe.initiate_chat(
