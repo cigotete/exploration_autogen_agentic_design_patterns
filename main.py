@@ -51,15 +51,42 @@ customer_proxy_agent = ConversableAgent(
     is_termination_msg=lambda msg: "terminate" in msg.get("content").lower(),
 )
 
-chat_result = joe.initiate_chat(
-    recipient=cathy,
-    message="I'm Joe. Cathy, let's keep the jokes rolling."
-)
+chats = [
+    {
+        "sender": onboarding_personal_information_agent,
+        "recipient": customer_proxy_agent,
+        "message":
+            "Hello, I'm here to help you get started with our product."
+            "Could you tell me your name and location?",
+        "summary_method": "reflection_with_llm",
+        "summary_args": {
+            "summary_prompt" : "Return the customer information "
+                             "into as JSON object only: "
+                             "{'name': '', 'location': ''}",
+        },
+        "max_turns": 2,
+        "clear_history" : True
+    },
+    {
+        "sender": onboarding_topic_preference_agent,
+        "recipient": customer_proxy_agent,
+        "message":
+                "Great! Could you tell me what topics you are "
+                "interested in reading about?",
+        "summary_method": "reflection_with_llm",
+        "max_turns": 1,
+        "clear_history" : False
+    },
+    {
+        "sender": customer_proxy_agent,
+        "recipient": customer_engagement_agent,
+        "message": "Let's find something fun to read.",
+        "max_turns": 1,
+        "summary_method": "reflection_with_llm",
+    },
+]
 
-cathy.send(message="What's last joke we talked about?", recipient=joe)
+from autogen import initiate_chats
 
-import pprint
+chat_results = initiate_chats(chats)
 
-pprint.pprint(chat_result.chat_history)
-pprint.pprint(chat_result.cost)
-pprint.pprint(chat_result.summary)
