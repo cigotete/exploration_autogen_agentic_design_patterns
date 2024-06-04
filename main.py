@@ -2,97 +2,39 @@ from utils import get_openai_api_key
 OPENAI_API_KEY = get_openai_api_key()
 llm_config = {"model": "gpt-3.5-turbo"}
 
-# Defining an AutoGen agents
-from autogen import ConversableAgent
+task = '''
+        Write a concise but engaging blogpost about
+       DeepLearning.AI. Make sure the blogpost is
+       within 100 words.
+       '''
 
-onboarding_personal_information_agent = ConversableAgent(
-    name="Onboarding Personal Information Agent",
-    system_message='''You are a helpful customer onboarding agent,
-    you are here to help new customers get started with our product.
-    Your job is to gather customer's name and location.
-    Do not ask for other information. Return 'TERMINATE' 
-    when you have gathered all the information.''',
+import autogen
+
+writer = autogen.AssistantAgent(
+    name="Writer",
+    system_message="You are a writer. You write engaging and concise " 
+        "blogpost (with title) on given topics. You must polish your "
+        "writing based on the feedback you receive and give a refined "
+        "version. Only return your final work without additional comments.",
     llm_config=llm_config,
-    code_execution_config=False,
-    human_input_mode="NEVER",
 )
 
-onboarding_topic_preference_agent = ConversableAgent(
-    name="Onboarding Topic preference Agent",
-    system_message='''You are a helpful customer onboarding agent,
-    you are here to help new customers get started with our product.
-    Your job is to gather customer's preferences on news topics.
-    Do not ask for other information.
-    Return 'TERMINATE' when you have gathered all the information.''',
+#reply = writer.generate_reply(messages=[{"content": task, "role": "user"}])
+
+#print(reply)
+
+critic = autogen.AssistantAgent(
+    name="Critic",
+    is_termination_msg=lambda x: x.get("content", "").find("TERMINATE") >= 0,
     llm_config=llm_config,
-    code_execution_config=False,
-    human_input_mode="NEVER",
+    system_message="You are a critic. You review the work of "
+                "the writer and provide constructive "
+                "feedback to help improve the quality of the content.",
 )
 
-customer_engagement_agent = ConversableAgent(
-    name="Customer Engagement Agent",
-    system_message='''You are a helpful customer service agent
-    here to provide fun for the customer based on the user's
-    personal information and topic preferences.
-    This could include fun facts, jokes, or interesting stories.
-    Make sure to make it engaging and fun!
-    Return 'TERMINATE' when you are done.''',
-    llm_config=llm_config,
-    code_execution_config=False,
-    human_input_mode="NEVER",
-    is_termination_msg=lambda msg: "terminate" in msg.get("content").lower(),
+res = critic.initiate_chat(
+    recipient=writer,
+    message=task,
+    max_turns=2,
+    summary_method="last_msg"
 )
-
-customer_proxy_agent = ConversableAgent(
-    name="customer_proxy_agent",
-    llm_config=False,
-    code_execution_config=False,
-    human_input_mode="ALWAYS",
-    is_termination_msg=lambda msg: "terminate" in msg.get("content").lower(),
-)
-
-chats = [
-    {
-        "sender": onboarding_personal_information_agent,
-        "recipient": customer_proxy_agent,
-        "message":
-            "Hello, I'm here to help you get started with our product."
-            "Could you tell me your name and location?",
-        "summary_method": "reflection_with_llm",
-        "summary_args": {
-            "summary_prompt" : "Return the customer information "
-                             "into as JSON object only: "
-                             "{'name': '', 'location': ''}",
-        },
-        "max_turns": 2,
-        "clear_history" : True
-    },
-    {
-        "sender": onboarding_topic_preference_agent,
-        "recipient": customer_proxy_agent,
-        "message":
-                "Great! Could you tell me what topics you are "
-                "interested in reading about?",
-        "summary_method": "reflection_with_llm",
-        "max_turns": 1,
-        "clear_history" : False
-    },
-    {
-        "sender": customer_proxy_agent,
-        "recipient": customer_engagement_agent,
-        "message": "Let's find something fun to read.",
-        "max_turns": 1,
-        "summary_method": "reflection_with_llm",
-    },
-]
-
-from autogen import initiate_chats
-
-chat_results = initiate_chats(chats)
-
-for chat_result in chat_results:
-    print(chat_result.summary)
-    print("\n")
-for chat_result in chat_results:
-    print(chat_result.cost)
-    print("\n")
