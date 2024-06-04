@@ -90,3 +90,9 @@ from autogen import initiate_chats
 
 chat_results = initiate_chats(chats)
 
+for chat_result in chat_results:
+    print(chat_result.summary)
+    print("\n")
+for chat_result in chat_results:
+    print(chat_result.cost)
+    print("\n")
