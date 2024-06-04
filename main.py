@@ -99,3 +99,25 @@ for caller in [player_white, player_black]:
     )
 
 player_black.llm_config["tools"]
+
+player_white.register_nested_chats(
+    trigger=player_black,
+    chat_queue=[
+        {
+            "sender": board_proxy,
+            "recipient": player_white,
+            "summary_method": "last_msg",
+        }
+    ],
+)
+
+player_black.register_nested_chats(
+    trigger=player_white,
+    chat_queue=[
+        {
+            "sender": board_proxy,
+            "recipient": player_black,
+            "summary_method": "last_msg",
+        }
+    ],
+)
