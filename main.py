@@ -50,7 +50,8 @@ player_white = ConversableAgent(
     name="Player White",
     system_message="You are a chess player and you play as white. "
     "First call get_legal_moves(), to get a list of legal moves. "
-    "Then call make_move(move) to make a move.",
+    "Then call make_move(move) to make a move. "
+    "After a move is made, chitchat to make the game fun.",
     llm_config=llm_config,
 )
 
@@ -59,7 +60,8 @@ player_black = ConversableAgent(
     name="Player Black",
     system_message="You are a chess player and you play as black. "
     "First call get_legal_moves(), to get a list of legal moves. "
-    "Then call make_move(move) to make a move.",
+    "Then call make_move(move) to make a move. "
+    "After a move is made, chitchat to make the game fun.",
     llm_config=llm_config,
 )
 
@@ -89,7 +91,7 @@ for caller in [player_white, player_black]:
         name="get_legal_moves",
         description="Get legal moves.",
     )
-    
+
     register_function(
         make_move,
         caller=caller,
@@ -98,8 +100,6 @@ for caller in [player_white, player_black]:
         description="Call this tool to make a move.",
     )
 
-player_black.llm_config["tools"]
-
 player_white.register_nested_chats(
     trigger=player_black,
     chat_queue=[
@@ -107,6 +107,7 @@ player_white.register_nested_chats(
             "sender": board_proxy,
             "recipient": player_white,
             "summary_method": "last_msg",
+            "silent": True,
         }
     ],
 )
@@ -118,6 +119,7 @@ player_black.register_nested_chats(
             "sender": board_proxy,
             "recipient": player_black,
             "summary_method": "last_msg",
+            "silent": True,
         }
     ],
 )
