@@ -121,3 +121,11 @@ player_black.register_nested_chats(
         }
     ],
 )
+
+board = chess.Board()
+
+chat_result = player_black.initiate_chat(
+    player_white,
+    message="Let's play chess! Your move.",
+    max_turns=2,
+)
