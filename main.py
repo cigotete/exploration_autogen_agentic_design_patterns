@@ -78,3 +78,24 @@ board_proxy = ConversableAgent(
     default_auto_reply="Please make a move.",
     human_input_mode="NEVER",
 )
+
+from autogen import register_function
+
+for caller in [player_white, player_black]:
+    register_function(
+        get_legal_moves,
+        caller=caller,
+        executor=board_proxy,
+        name="get_legal_moves",
+        description="Get legal moves.",
+    )
+    
+    register_function(
+        make_move,
+        caller=caller,
+        executor=board_proxy,
+        name="make_move",
+        description="Call this tool to make a move.",
+    )
+
+player_black.llm_config["tools"]
