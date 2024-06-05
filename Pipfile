@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 pyautogen = "*"
 chess = "*"
+matplotlib = "*"
+ipython = "*"
+yfinance = "*"
 
 [dev-packages]
 
