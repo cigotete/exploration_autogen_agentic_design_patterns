@@ -2,132 +2,46 @@ from utils import get_openai_api_key
 OPENAI_API_KEY = get_openai_api_key()
 llm_config = {"model": "gpt-3.5-turbo"}
 
-import chess
-import chess.svg
-from typing_extensions import Annotated
+from autogen.coding import LocalCommandLineCodeExecutor
 
-board = chess.Board()
-made_move = False
-
-def get_legal_moves(
-) -> Annotated[str, "A list of legal moves in UCI format"]:
-    return "Possible moves are: " + ",".join(
-        [str(move) for move in board.legal_moves]
-    )
-
-def make_move(
-    move: Annotated[str, "A move in UCI format."]
-) -> Annotated[str, "Result of the move."]:
-    move = chess.Move.from_uci(move)
-    board.push_uci(str(move))
-    global made_move
-    made_move = True
-
-    # Display the board.
-    chess.svg.board(
-        board,
-        arrows=[(move.from_square, move.to_square)],
-        fill={move.from_square: "gray"},
-        size=200
-    )
-
-    # Get the piece name.
-    piece = board.piece_at(move.to_square)
-    piece_symbol = piece.unicode_symbol()
-    piece_name = (
-        chess.piece_name(piece.piece_type).capitalize()
-        if piece_symbol.isupper()
-        else chess.piece_name(piece.piece_type)
-    )
-    return f"Moved {piece_name} ({piece_symbol}) from "\
-    f"{chess.SQUARE_NAMES[move.from_square]} to "\
-    f"{chess.SQUARE_NAMES[move.to_square]}."
-
-from autogen import ConversableAgent
-
-# Player white agent
-player_white = ConversableAgent(
-    name="Player White",
-    system_message="You are a chess player and you play as white. "
-    "First call get_legal_moves(), to get a list of legal moves. "
-    "Then call make_move(move) to make a move. "
-    "After a move is made, chitchat to make the game fun.",
-    llm_config=llm_config,
+# Define a code executor
+executor = LocalCommandLineCodeExecutor(
+    timeout=60,
+    work_dir="coding",
 )
 
-# Player black agent
-player_black = ConversableAgent(
-    name="Player Black",
-    system_message="You are a chess player and you play as black. "
-    "First call get_legal_moves(), to get a list of legal moves. "
-    "Then call make_move(move) to make a move. "
-    "After a move is made, chitchat to make the game fun.",
-    llm_config=llm_config,
-)
+from autogen import ConversableAgent, AssistantAgent
 
-def check_made_move(msg):
-    global made_move
-    if made_move:
-        made_move = False
-        return True
-    else:
-        return False
-    
-board_proxy = ConversableAgent(
-    name="Board Proxy",
+# Agent with code executor configuration
+code_executor_agent = ConversableAgent(
+    name="code_executor_agent",
     llm_config=False,
-    is_termination_msg=check_made_move,
-    default_auto_reply="Please make a move.",
+    code_execution_config={"executor": executor},
+    human_input_mode="ALWAYS",
+    default_auto_reply=
+    "Please continue. If everything is done, reply 'TERMINATE'.",
+)
+
+# Agent with code writing capability
+code_writer_agent = AssistantAgent(
+    name="code_writer_agent",
+    llm_config=llm_config,
+    code_execution_config=False,
     human_input_mode="NEVER",
 )
 
-from autogen import register_function
+code_writer_agent_system_message = code_writer_agent.system_message
+print(code_writer_agent_system_message)
 
-for caller in [player_white, player_black]:
-    register_function(
-        get_legal_moves,
-        caller=caller,
-        executor=board_proxy,
-        name="get_legal_moves",
-        description="Get legal moves.",
-    )
+import datetime
 
-    register_function(
-        make_move,
-        caller=caller,
-        executor=board_proxy,
-        name="make_move",
-        description="Call this tool to make a move.",
-    )
+today = datetime.datetime.now().date()
+message = f"Today is {today}. "\
+"Create a plot showing stock gain YTD for NVDA and TLSA. "\
+"Make sure the code is in markdown code block and save the figure"\
+" to a file ytd_stock_gains.png."""
 
-player_white.register_nested_chats(
-    trigger=player_black,
-    chat_queue=[
-        {
-            "sender": board_proxy,
-            "recipient": player_white,
-            "summary_method": "last_msg",
-            "silent": True,
-        }
-    ],
-)
-
-player_black.register_nested_chats(
-    trigger=player_white,
-    chat_queue=[
-        {
-            "sender": board_proxy,
-            "recipient": player_black,
-            "summary_method": "last_msg",
-            "silent": True,
-        }
-    ],
-)
-
-board = chess.Board()
-
-chat_result = player_black.initiate_chat(
-    player_white,
-    message="Let's play chess! Your move.",
-    max_turns=2,
+chat_result = code_executor_agent.initiate_chat(
+    code_writer_agent,
+    message=message,
 )
