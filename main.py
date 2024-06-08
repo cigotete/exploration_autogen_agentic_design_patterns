@@ -69,6 +69,14 @@ groupchat = autogen.GroupChat(
     agents=[user_proxy, engineer, writer, executor, planner],
     messages=[],
     max_round=10,
+    allowed_or_disallowed_speaker_transitions={
+        user_proxy: [engineer, writer, executor, planner],
+        engineer: [user_proxy, executor],
+        writer: [user_proxy, planner],
+        executor: [user_proxy, engineer, planner],
+        planner: [user_proxy, engineer, writer],
+    },
+    speaker_transitions_type="allowed",
 )
 
 manager = autogen.GroupChatManager(
